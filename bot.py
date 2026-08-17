@@ -7,8 +7,6 @@ from aiogram.utils import executor
 
 # --- SOZLAMALAR ---
 API_TOKEN = os.getenv('API_TOKEN') 
-CHANNEL_ID = -100123456789  # Kanal ID raqami (-100 bilan boshlanadi)
-CHANNEL_LINK = 'https://t.me/tran'  # Kanal havolasi
 ADMIN_ID = 8588301820       
 BONUS_AMOUNT = 3000
 
@@ -56,15 +54,7 @@ def update_balance(referrer_id):
     conn.commit()
     conn.close()
 
-# --- OBUNANI TEKSHIRISH ---
-async def check_sub(user_id):
-    try:
-        member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
-        return member.status in ['member', 'creator', 'administrator', 'restricted']
-    except Exception:
-        return False
-
-# --- START VA OBUNA ---
+# --- START ---
 @dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
     db_start()
@@ -73,34 +63,19 @@ async def cmd_start(message: types.Message):
     args = message.get_args()
     
     if args and args.isdigit() and int(args) != user_id:
-        # Taklif qilgan odamga bonus berishdan oldin u ham kanalga a'zoligini tekshirish mumkin yoki to'g'ridan-to'g'ri beriladi
         update_balance(int(args))
         try:
-            await bot.send_message(int(args), f"🎉 Yangi do'stingiz to'liq obuna bo'ldi! Hisobingizga {BONUS_AMOUNT} so'm qo'shildi.")
+            await bot.send_message(int(args), f"🎉 Yangi do'stingiz qo'shildi! Hisobingizga {BONUS_AMOUNT} so'm qo'shildi.")
         except:
             pass
 
-    if not await check_sub(user_id):
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("Kanalga obuna bo'lish 🔔", url=CHANNEL_LINK))
-        markup.add(types.InlineKeyboardButton("Tekshirish ✅", callback_data='check_subscription'))
-        await message.answer("Botdan foydalanish uchun avval quyidagi kanalimizga obuna bo'ling va so'rov yuboring:", reply_markup=markup)
-    else:
-        await main_menu(message)
+    await main_menu(message)
 
 async def main_menu(message: types.Message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row('💰 Pul ishlash', '👤 Profil')
     markup.row('📞 Admin bilan bog\'lanish')
     await message.answer("Asosiy menyu:", reply_markup=markup)
-
-@dp.callback_query_handler(text='check_subscription')
-async def cb_check_sub(call: types.CallbackQuery):
-    if await check_sub(call.from_user.id):
-        await call.message.delete()
-        await main_menu(call.message)
-    else:
-        await call.answer("Siz hali kanalga obuna bo'lmadingiz!", show_alert=True)
 
 # --- MENYU TUGMALARI ---
 @dp.message_handler(text='💰 Pul ishlash')
